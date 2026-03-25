@@ -26,6 +26,33 @@ Log.Logger = new LoggerConfiguration()
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Host.UseSerilog();
+// Retrieve secrets from configuration or environment (user-secrets map to Configuration)
+var passwordKey = builder.Configuration["Identity:PasswordKey"] ?? Environment.GetEnvironmentVariable("LOGITRACK_PASSWORD_KEY");
+var jwtKey = builder.Configuration["Jwt:Key"] ?? Environment.GetEnvironmentVariable("Jwt__Key") ?? Environment.GetEnvironmentVariable("LOGITRACK_JWT_KEY");
+
+// Enforce presence in production, warn in non-production
+if (builder.Environment.IsProduction())
+{
+    if (string.IsNullOrEmpty(passwordKey))
+    {
+        throw new InvalidOperationException("Missing required secret: LOGITRACK_PASSWORD_KEY (or Identity:PasswordKey). Set the environment variable or user-secrets before starting in production.");
+    }
+    if (string.IsNullOrEmpty(jwtKey))
+    {
+        throw new InvalidOperationException("Missing required secret: Jwt:Key. Set via user-secrets (Jwt:Key) or environment variable (Jwt__Key) before starting in production.");
+    }
+}
+else
+{
+    if (string.IsNullOrEmpty(passwordKey))
+    {
+        Log.Warning("Identity:PasswordKey / LOGITRACK_PASSWORD_KEY not set; using empty pepper for password hashing (development only). Set a secret for more secure hashes.");
+    }
+    if (string.IsNullOrEmpty(jwtKey))
+    {
+        Log.Warning("Jwt:Key not set; JWT signing will fail until a key is provided (use user-secrets or Jwt__Key env var). This is a development warning.");
+    }
+}
 
 
 // Add Swagger services
@@ -51,6 +78,9 @@ builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options =>
 })
     .AddEntityFrameworkStores<LogiTrackContext>();
 
+// Register a keyed password hasher that uses the optional passwordKey (pepper)
+builder.Services.AddSingleton<IPasswordHasher<ApplicationUser>>(sp => new LogiTrack.Utilities.KeyedPasswordHasher<ApplicationUser>(passwordKey));
+
 // JWT Authentication configuration (register AFTER Identity so JWT becomes the default scheme)
 builder.Services.AddAuthentication(options =>
 {
@@ -67,7 +97,7 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidAudience = builder.Configuration["Jwt:Audience"],
-        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"] ?? throw new InvalidOperationException("Missing configuration: Jwt:Key")))
+        IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey ?? throw new InvalidOperationException("Missing configuration: Jwt:Key")))
     };
 });
 

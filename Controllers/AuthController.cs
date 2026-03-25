@@ -177,9 +177,9 @@ namespace LogiTrack.Controllers
             // Add role claims
             claims.AddRange(userRoles.Select(role => new Claim(ClaimTypes.Role, role)));
 
-            var jwtKey = _configuration["Jwt:Key"];
+            var jwtKey = _configuration["Jwt:Key"] ?? System.Environment.GetEnvironmentVariable("Jwt__Key") ?? System.Environment.GetEnvironmentVariable("LOGITRACK_JWT_KEY");
             if (string.IsNullOrEmpty(jwtKey))
-                throw new InvalidOperationException("Missing configuration: Jwt:Key");
+                throw new InvalidOperationException("Missing required secret: Jwt:Key (or Jwt__Key / LOGITRACK_JWT_KEY). Provide via user-secrets or environment variable.");
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

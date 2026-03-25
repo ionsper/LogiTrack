@@ -36,6 +36,15 @@ Notes:
 
 - Configuration is read from `appsettings.json` and `appsettings.Development.json` by default.
 - On first run, the database will be initialized when migrations are applied.
+ 
+ - Default HTTP port: 5000 (Kestrel is configured to listen on `http://*:5000` by default).
+ - Default HTTPS port (development): 5001. To run HTTPS locally, ensure the .NET developer certificate is trusted:
+
+```powershell
+dotnet dev-certs https --trust
+```
+
+You can also configure Kestrel endpoints in `appsettings.json` or via environment variables.
 
 ## Build
 
@@ -50,28 +59,38 @@ dotnet build
 - App configuration files: `appsettings.json`, `appsettings.Development.json`.
 - Connection string name: `Default` (when present). If not provided the app will use the configured SQLite file.
 
+
 ## Security notes
 
 - Treat log files in `logs/` as potentially sensitive — they may contain IPs, usernames, or other diagnostics.
 - This project is intended for learning and local development; review authentication and secrets before using in production.
 
-- Identity configuration: For testing the project includes a placeholder password-hash key in the application configuration. The test key is stored in [appsettings.json](appsettings.json) under the `Identity:PasswordKey` configuration path; do not commit production secrets to source control.
-- Recommendation: In production or shared environments, provide the password-hash key via an environment variable (for example `LOGITRACK_PASSWORD_KEY`) and read it in code when available. A minimal pattern:
+### Secrets
 
-```csharp
-var passwordKey = Configuration["Identity:PasswordKey"] ?? Environment.GetEnvironmentVariable("LOGITRACK_PASSWORD_KEY");
+- Provide required secrets via `dotnet user-secrets` (for local development) or environment variables in CI/production rather than embedding them in code.
+
+Examples (local development with user-secrets):
+
+```powershell
+dotnet user-secrets init
+dotnet user-secrets set "Jwt:Key" "<your-jwt-secret>"
+dotnet user-secrets set "Identity:PasswordKey" "<your-password-pepper>"
 ```
 
-- Secure storage: Use environment variables, user secrets (for local development), or a secret store (Azure Key Vault, AWS Secrets Manager, etc.) for production secrets and rotate them regularly.
+Or set environment variables (PowerShell):
 
-## Project structure highlights
+```powershell
+$env:Jwt__Key = "<your-jwt-secret>"
+$env:LOGITRACK_PASSWORD_KEY = "<your-password-pepper>"
+```
 
-- `Program.cs` — application startup, DI, and middleware pipeline
-- `Data/LogiTrackContext.cs` — EF Core DbContext
-- `Controllers/` — `AuthController`, `InventoryController`, `OrderController`
-- `Models/` — domain models: `Order`, `InventoryItem`, `ApplicationUser`
-- `Middleware/` — request logging, error handling, correlation id middleware
-- `Migrations/` — EF Core migrations
+- If a secret was ever pushed to a public repository, rotate the secret immediately and update deployed environments.
+
+### Swagger / OpenAPI
+
+- The project registers Swagger and exposes the OpenAPI UI. When the app runs locally the Swagger UI is mounted at the application root and the OpenAPI JSON is available at `/swagger/v1/swagger.json`.
+- To view the API documentation open the app URL in a browser (for example `http://localhost:5000/` or the port shown when running `dotnet run`) and the Swagger UI will load.
+- The generated OpenAPI spec can be used for client generation, testing, or importing into tools such as Postman.
 
 ## Development tips
 
@@ -124,7 +143,6 @@ If you'd like to suggest improvements, open an issue or submit a pull request de
     ├── Program.cs
     ├── README.md
     └── tests.http
-    └── README.md
 ```
 
 ---
