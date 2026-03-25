@@ -1,0 +1,231 @@
+### InventoryController API Tests
+
+###
+# GET all inventory items (success)
+GET http://localhost:5000/api/inventory
+Accept: application/json
+Authorization: Bearer {{BEARER_TOKEN}}
+
+###
+
+
+# POST new inventory item (success)
+POST http://localhost:5000/api/inventory
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{BEARER_TOKEN}}
+
+{
+  "name": "Test Widget",
+  "quantity": 10,
+  "location": "Test Shelf"
+}
+
+###
+
+
+# POST new inventory item (fail - missing body)
+POST http://localhost:5000/api/inventory
+Content-Type: application/json
+Accept: application/json
+
+###
+
+
+# DELETE inventory item (success)
+# Replace {id} with a valid item id after creating one
+DELETE http://localhost:5000/api/inventory/3
+Accept: application/json
+Authorization: Bearer {{BEARER_TOKEN}}
+
+###
+
+
+# DELETE inventory item (fail - not found)
+DELETE http://localhost:5000/api/inventory/99999
+Accept: application/json
+
+
+### OrderController API Tests
+
+# GET all orders (success)
+GET http://localhost:5000/api/orders
+Accept: application/json
+Authorization: Bearer {{BEARER_TOKEN}}
+
+###
+
+# GET order by id (success - replace {id} with a valid order id)
+GET http://localhost:5000/api/orders/1
+Accept: application/json
+Authorization: Bearer {{BEARER_TOKEN}}
+
+###
+
+# GET order by id (fail - not found)
+GET http://localhost:5000/api/orders/99999
+Accept: application/json
+
+###
+
+
+
+
+# POST new order (success - by itemId)
+# Only existing inventory items with the given itemId will be added to the order
+# Replace {existingItemId1} and {existingItemId2} with valid item ids
+POST http://localhost:5000/api/orders
+Content-Type: application/json
+Accept: application/json
+Authorization: Bearer {{BEARER_TOKEN}}
+
+{
+  "customerName": "Test Customer",
+  "datePlaced": "2026-03-15T12:00:00Z",
+  "items": [
+    {
+      "itemId": 1
+    },
+    {
+      "itemId": 5
+    }
+  ]
+}
+
+###
+
+# POST new order (fail - missing body)
+POST http://localhost:5000/api/orders
+Content-Type: application/json
+Accept: application/json
+
+###
+
+# DELETE order (success - replace {id} with a valid order id)
+DELETE http://localhost:5000/api/orders/3
+Accept: application/json
+Authorization: Bearer {{BEARER_TOKEN}}
+
+###
+
+# DELETE order (fail - not found)
+DELETE http://localhost:5000/api/orders/99999
+Accept: application/json
+
+
+### AuthController API Tests
+
+# Register new user (success)
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "testuser1",
+  "email": "testuser1@example.com",
+  "password": "{{PASSWORD}}"
+}
+
+###
+
+
+# Register new user (fail - missing field)
+POST http://localhost:5000/api/auth/register
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "testuser2",
+  "password": "{{PASSWORD}}"
+}
+
+###
+
+
+# Login user (success)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "testuser1",
+  "password": "{{PASSWORD}}"
+}
+
+###
+
+
+# Login user (fail - incorrect password)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "testuser1",
+  "password": "{{WRONG_PASSWORD}}"
+}
+
+###
+
+
+# Login user (fail - not found)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "nonexistentuser",
+  "password": "{{PASSWORD}}"
+}
+
+### Session-based authentication flow (server-side sessions)
+
+# 1) Login and obtain session cookie (copy the `session_id` cookie value from the `Set-Cookie` response header)
+POST http://localhost:5000/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "username": "testuser1",
+  "password": "{{PASSWORD}}"
+}
+
+###
+
+# NOTE: After the login request above, copy the `session_id` cookie value from the `Set-Cookie` response header
+# and paste it into the `{{SESSION_COOKIE}}` placeholder below (format: session_id=<value>;)
+
+# 2) Access protected endpoint using session cookie (success)
+GET http://localhost:5000/api/inventory
+Accept: application/json
+Cookie: session_id={{SESSION_COOKIE}}
+
+###
+
+# 3) Refresh the session (extend TTL) using session cookie (success)
+POST http://localhost:5000/api/auth/refresh-session
+Accept: application/json
+Cookie: session_id={{SESSION_COOKIE}}
+
+###
+
+# 4) Access protected endpoint again using same session cookie (should still succeed after refresh)
+GET http://localhost:5000/api/inventory
+Accept: application/json
+Cookie: session_id={{SESSION_COOKIE}}
+
+###
+
+# 5) Logout (invalidate session on server) - send session cookie
+POST http://localhost:5000/api/auth/logout
+Accept: application/json
+Cookie: session_id={{SESSION_COOKIE}}
+
+###
+
+# 6) Access protected endpoint after logout (expected: 401 Unauthorized)
+GET http://localhost:5000/api/inventory
+Accept: application/json
+Cookie: session_id={{SESSION_COOKIE}}
+
+###

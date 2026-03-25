@@ -1,0 +1,67 @@
+## Visual Studio / .NET
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## Build results
+bin/
+obj/
+**/bin/
+**/obj/
+Debug/
+Release/
+
+## Rider
+.idea/
+
+## NuGet
+*.nupkg
+packages/
+.nuget/packages/
+
+## Publish/build artifacts
+publish/
+artifacts/
+
+## Logs and local runtime files
+logs/
+*.log
+
+## User secrets and local config (do not commit development secrets)
+secrets.json
+secret.json
+
+## Database files
+*.mdf
+*.ldf
+*.sqlite
+*.db
+*.db-journal
+
+## Test results / coverage
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
+
+## OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
+ehthumbs.db
+
+## Resharper
+_ReSharper*/
+*.DotSettings.user
+
+## Generated files
+*.g.cs
+*.g.i.cs
+GeneratedFiles/
+
+## Ignore local editor/workspace files
+*.code-workspace
